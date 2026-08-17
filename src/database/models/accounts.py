@@ -1,6 +1,16 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, func
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.enums import UserGroupEnum
@@ -12,7 +22,7 @@ class UserGroup(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[UserGroupEnum] = mapped_column(
-        Enum(UserGroupEnum), nullable=False, unique=True
+        Enum(UserGroupEnum, name="user_group_enum"), nullable=False, unique=True
     )
 
     users: Mapped[list["User"]] = relationship("User", back_populates="group")
@@ -38,10 +48,31 @@ class User(Base):
         onupdate=func.now(),
     )
     group_id: Mapped[int] = mapped_column(
-        ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("user_groups.id", ondelete="RESTRICT"), nullable=False
     )
 
     group: Mapped["UserGroup"] = relationship("UserGroup", back_populates="users")
+    profile: Mapped["UserProfile"] = relationship("UserProfile", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, is_active={self.is_active})>"
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    first_name: Mapped[str | None] = mapped_column(String(100))
+    last_name: Mapped[str | None] = mapped_column(String(100))
+    avatar: Mapped[str | None] = mapped_column(String(255))
+    gender: Mapped[str | None] = mapped_column(String(10))
+    date_of_birth: Mapped[date | None] = mapped_column(Date)
+    info: Mapped[str | None] = mapped_column(Text)
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    user: Mapped["User"] = relationship("User", back_populates="profile")
+
+    def __repr__(self):
+        return f"<UserProfile(id={self.id}, first_name={self.first_name}, last_name={self.last_name})>"

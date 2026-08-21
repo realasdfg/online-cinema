@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.models.enums import UserGroupEnum
+from database.models.enums import GenderEnum, UserGroupEnum
 from database.session import Base
 
 
@@ -81,7 +81,7 @@ class UserProfile(Base):
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     avatar: Mapped[str | None] = mapped_column(String(255))
-    gender: Mapped[str | None] = mapped_column(String(10))
+    gender: Mapped[GenderEnum | None] = mapped_column(Enum(GenderEnum))
     date_of_birth: Mapped[date | None] = mapped_column(Date)
     info: Mapped[str | None] = mapped_column(Text)
 

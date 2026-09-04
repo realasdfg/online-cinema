@@ -14,7 +14,7 @@ class AbstractRepository(ABC, Generic[TModel]):
         raise NotImplementedError
 
     @abstractmethod
-    async def get(self, filters: dict) -> TModel | None:
+    async def get(self, *conditions) -> TModel | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -42,8 +42,8 @@ class SQLAlchemyRepository(AbstractRepository[TModel], Generic[TModel]):
         await self.session.flush()
         return res.scalar_one()
 
-    async def get(self, filters: dict) -> TModel | None:
-        stmt = select(self.model).filter_by(**filters)
+    async def get(self, *conditions) -> TModel | None:
+        stmt = select(self.model).where(*conditions)
         res = await self.session.execute(stmt)
         return res.scalar_one_or_none()
 

@@ -7,13 +7,15 @@ from database.repositories.repository import SQLAlchemyRepository, TModel
 from exceptions.base import EntityNotFoundError
 
 
-class BaseCRUDService(Generic[TModel]):
+class BaseService(Generic[TModel]):
     def __init__(
         self, session: AsyncSession, repo_class: type[SQLAlchemyRepository[TModel]]
     ):
         self._session = session
         self._repo = repo_class(session)
 
+
+class BaseCRUDService(BaseService[TModel]):
     async def create(self, data: dict) -> TModel:
         obj = await self._repo.create(data)
         await self._session.commit()

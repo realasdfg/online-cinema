@@ -131,7 +131,7 @@ class PasswordResetToken(BaseToken):
 class RefreshToken(BaseToken):
     __tablename__ = "refresh_tokens"
 
-    user: Mapped["User"] = relationship("User", back_populates="refresh_token")
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
 
     @classmethod
     def create(

@@ -16,6 +16,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.enums import GenderEnum, UserGroupEnum
 from database.session import Base
+from security.passwords import hash_password, verify_password
+from validators.accounts import validate_password_strength
 
 
 class UserGroup(Base):
@@ -37,7 +39,7 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    _hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -72,6 +74,31 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, is_active={self.is_active})>"
+
+    def has_group(self, group_name: UserGroupEnum) -> bool:
+        return self.group.name == group_name
+
+    @classmethod
+    def create(
+        cls, email: str, raw_password: str, group_id: int | Mapped[int]
+    ) -> "User":
+        user = cls(email=email, group_id=group_id)
+        user.password = raw_password
+        return user
+
+    @property
+    def password(self) -> None:
+        raise AttributeError(
+            "Password is write-only. Use the setter to set the password."
+        )
+
+    @password.setter
+    def password(self, raw_password: str) -> None:
+        validate_password_strength(raw_password)
+        self._hashed_password = hash_password(raw_password)
+
+    def verify_password(self, raw_password: str) -> bool:
+        return verify_password(raw_password, self._hashed_password)
 
 
 class UserProfile(Base):

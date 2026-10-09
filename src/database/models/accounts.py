@@ -39,7 +39,9 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    _hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    _hashed_password: Mapped[str] = mapped_column(
+        "hashed_password", String(255), nullable=False
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

@@ -17,16 +17,5 @@ async def register_user(
     user_data: UserRegistrationRequestSchema,
     service: AccountService = Depends(get_account_service),
 ) -> UserRegistrationResponseSchema:
-    try:
-        user = await service.register(user_data.email, user_data.password)
-    except UserAlreadyExistsError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-    except DefaultGroupNotFoundError:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    except SQLAlchemyError as e:
-        print(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during user creation.",
-        )
+    user = await service.register(user_data.email, user_data.password)
     return UserRegistrationResponseSchema.model_validate(user)

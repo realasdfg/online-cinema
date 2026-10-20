@@ -130,9 +130,7 @@ class BaseToken(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc) + timedelta(days=1),
+        DateTime(timezone=True), nullable=False
     )
 
     user_id: Mapped[int] = mapped_column(

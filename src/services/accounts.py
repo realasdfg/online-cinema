@@ -1,9 +1,10 @@
-from typing import Any
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.accounts import ActivationToken, User, UserGroup
+from config import Settings, get_settings
+from database.models.accounts import User, UserGroup
 from database.models.enums import UserGroupEnum
 from database.repositories.accounts import (
     ActivationTokenRepository,
@@ -17,8 +18,9 @@ from services.base import BaseCRUDService
 
 
 class AccountService(BaseCRUDService[User]):
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         super().__init__(session, UserRepository)
+        self._settings = settings or get_settings()
         self._group_repo = UserGroupRepository(session)
         self._activation_token_repo = ActivationTokenRepository(session)
 
@@ -47,6 +49,8 @@ class AccountService(BaseCRUDService[User]):
             {
                 "user_id": user.id,
                 "token_hash": hash_token(raw_token),
+                "expires_at": datetime.now(timezone.utc)
+                + timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
             }
         )
 

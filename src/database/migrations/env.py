@@ -6,15 +6,17 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from config import settings
+from config import get_settings
 from database.models import accounts  # noqa: F401
 from database.session import Base
+
+settings = get_settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option("sqlalchemy.url", settings.db_uri)
+config.set_main_option("sqlalchemy.url", settings.DB_URI)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -60,9 +62,7 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        render_as_batch=True
+        connection=connection, target_metadata=target_metadata, render_as_batch=True
     )
 
     with context.begin_transaction():

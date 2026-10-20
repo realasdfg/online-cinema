@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -5,15 +6,14 @@ from pydantic_settings import BaseSettings
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 class Settings(BaseSettings):
-    db_name: str = "db.sqlite3"
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent
+    DB_FILE_NAME: str = "db.sqlite3"
 
     @property
-    def db_uri(self) -> str:
-        return f"sqlite+aiosqlite:///{BASE_DIR / self.db_name}"
+    def DB_URI(self) -> str:
+        return f"sqlite+aiosqlite:///{self.BASE_DIR / self.DB_FILE_NAME}"
 
 
 settings = Settings()

@@ -1,10 +1,11 @@
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pathlib import Path
 from typing import ClassVar
 
 import aiosmtplib
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from exceptions.email import BaseEmailError
 from notifications.interfaces import EmailSenderInterface
@@ -25,7 +26,7 @@ class EmailSender(EmailSenderInterface):
         email: str,
         password: str,
         use_tls: bool,
-        template_dir: str,
+        template_dir: Path,
     ) -> None:
         self._hostname = hostname
         self._port = port
@@ -33,7 +34,10 @@ class EmailSender(EmailSenderInterface):
         self._password = password
         self._use_tls = use_tls
 
-        self._env = Environment(loader=FileSystemLoader(template_dir))
+        self._env = Environment(
+            loader=FileSystemLoader(template_dir),
+            autoescape=select_autoescape(["html"]),
+        )
 
     async def _send_email(
         self, recipient: str, subject: str, html_content: str

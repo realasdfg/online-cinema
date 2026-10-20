@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,4 +17,9 @@ class Settings(BaseSettings):
         return f"sqlite+aiosqlite:///{self.BASE_DIR / self.DB_FILE_NAME}"
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    environment = os.getenv("ENVIRONMENT", "developing")
+    if environment == "testing":
+        pass
+    return Settings()

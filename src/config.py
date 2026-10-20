@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     DB_FILE_NAME: str = "db.sqlite3"
 
+    ACTIVATION_TOKEN_TTL_HOURS: int = 24
+
     @property
     def DB_URI(self) -> str:
         return f"sqlite+aiosqlite:///{self.BASE_DIR / self.DB_FILE_NAME}"

@@ -1,19 +1,21 @@
-class UserAlreadyExistsError(Exception):
-    def __init__(self, email):
-        self.email = email
-        super().__init__(f"User with email '{email}' already exists.")
+from exceptions.base import AppError
 
 
-class DefaultGroupNotFoundError(Exception):
-    def __init__(self):
-        super().__init__("Default 'USER' group is not seeded in the database.")
+class UserAlreadyExistsError(AppError):
+    status_code = 409
+    detail = "User with this email already exists."
 
 
-class InvalidOrExpiredTokenError(Exception):
-    def __init__(self):
-        super().__init__("Invalid or expired token.")
+class DefaultGroupNotFoundError(AppError):
+    status_code = 500
+    detail = "Default 'USER' group is not seeded in the database."
 
 
-class UserAlreadyActivatedError(Exception):
-    def __init__(self):
-        super().__init__("User already activated.")
+class InvalidOrExpiredTokenError(AppError):
+    status_code = 400
+    detail = "Invalid or expired token."
+
+
+class UserAlreadyActivatedError(AppError):
+    status_code = 400
+    detail = "User account is already active."

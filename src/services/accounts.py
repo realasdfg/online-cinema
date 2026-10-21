@@ -31,7 +31,7 @@ class AccountService(BaseCRUDService[User]):
 
     async def register(self, email: str, password: str) -> tuple[User, str]:
         if await self._repo.get(User.email == email) is not None:
-            raise UserAlreadyExistsError(email)
+            raise UserAlreadyExistsError()
 
         default_group = await self._group_repo.get(UserGroup.name == UserGroupEnum.USER)
         if default_group is None:
@@ -47,7 +47,7 @@ class AccountService(BaseCRUDService[User]):
             )
         except IntegrityError as e:
             await self._session.rollback()
-            raise UserAlreadyExistsError(email) from e
+            raise UserAlreadyExistsError() from e
 
         raw_token = generate_secure_token()
         await self._activation_token_repo.create(

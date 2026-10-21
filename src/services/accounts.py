@@ -85,3 +85,21 @@ class AccountService(BaseCRUDService[User]):
         await self._activation_token_repo.delete(ActivationToken.id == token_record.id)
         await self._session.commit()
         return user
+
+    async def refresh_activation_token(self, email: str) -> str | None:
+        user = await self._repo.get(User.email == email)
+        if user is None or user.is_active:
+            return None
+
+        await self._activation_token_repo.delete(ActivationToken.user_id == user.id)
+        raw_token = generate_secure_token()
+        await self._activation_token_repo.create(
+            {
+                "user_id": user.id,
+                "token_hash": hash_token(raw_token),
+                "expires_at": datetime.now(timezone.utc)
+                + timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
+            }
+        )
+        await self._session.commit()
+        return raw_token

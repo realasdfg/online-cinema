@@ -13,7 +13,7 @@ from services.accounts import AccountService
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 
-@router.post("/register/", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(
     user_data: UserRegistrationRequestSchema,
     background_tasks: BackgroundTasks,

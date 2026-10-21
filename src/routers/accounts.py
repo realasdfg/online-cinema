@@ -15,7 +15,6 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 @router.post("/register/", status_code=status.HTTP_201_CREATED)
 async def register_user(
-    request: Request,
     user_data: UserRegistrationRequestSchema,
     background_tasks: BackgroundTasks,
     service: AccountService = Depends(get_account_service),
@@ -26,7 +25,7 @@ async def register_user(
     background_tasks.add_task(
         email_sender.send_activation_email,
         user.email,
-        build_activation_link(request.app, settings, raw_token),
+        build_activation_link(settings, raw_token),
     )
     return UserRegistrationResponseSchema.model_validate(user)
 

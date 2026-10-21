@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     BASE_URL: str = "http://localhost:8000"
     API_V1_PREFIX: str = "/api/v1"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     DB_FILE_NAME: str = "db.sqlite3"
 

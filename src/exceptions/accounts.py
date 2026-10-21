@@ -8,7 +8,7 @@ class UserAlreadyExistsError(AppError):
 
 class DefaultGroupNotFoundError(AppError):
     status_code = 500
-    detail = "Default 'USER' group is not seeded in the database."
+    detail = "Internal server error."
 
 
 class InvalidOrExpiredTokenError(AppError):

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 
 from config import Settings, get_settings
 from dependencies import get_account_service, get_email_sender
 from notifications.interfaces import EmailSenderInterface
-from notifications.links import build_activation_link
+from notifications.links import build_activation_link, build_login_link
 from schemas.accounts import (
+    MessageResponseSchema,
+    UserActivationRequestSchema,
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
 )
@@ -27,9 +29,27 @@ async def register_user(
         user.email,
         build_activation_link(settings, raw_token),
     )
+    print(build_activation_link(settings, raw_token))
     return UserRegistrationResponseSchema.model_validate(user)
 
 
-@router.get("/activate/{token}", name="activate_account")
-async def activate_account(token: str):
+@router.post("/activate", status_code=status.HTTP_200_OK)
+async def activate_account(
+    activation_data: UserActivationRequestSchema,
+    background_tasks: BackgroundTasks,
+    service: AccountService = Depends(get_account_service),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings),
+) -> MessageResponseSchema:
+    user = await service.activate_account(activation_data.token)
+    background_tasks.add_task(
+        email_sender.send_activation_complete_email,
+        user.email,
+        build_login_link(settings),
+    )
+    return MessageResponseSchema(message="User account activated successfully.")
+
+
+@router.post("/login", status_code=status.HTTP_200_OK)
+async def login():
     pass

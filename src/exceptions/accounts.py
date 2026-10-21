@@ -7,3 +7,13 @@ class UserAlreadyExistsError(Exception):
 class DefaultGroupNotFoundError(Exception):
     def __init__(self):
         super().__init__("Default 'USER' group is not seeded in the database.")
+
+
+class InvalidOrExpiredTokenError(Exception):
+    def __init__(self):
+        super().__init__("Invalid or expired token.")
+
+
+class UserAlreadyActivatedError(Exception):
+    def __init__(self):
+        super().__init__("User already activated.")

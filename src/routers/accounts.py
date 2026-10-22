@@ -1,17 +1,20 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, status
 
 from config import Settings, get_settings
-from dependencies import get_account_service, get_email_sender
+from dependencies import get_account_service, get_auth_service, get_email_sender
 from notifications.interfaces import EmailSenderInterface
 from notifications.links import build_activation_link, build_login_link
 from schemas.accounts import (
     MessageResponseSchema,
     ResendActivationRequestSchema,
     UserActivationRequestSchema,
+    UserLoginRequestSchema,
+    UserLoginResponseSchema,
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
 )
 from services.accounts import AccountService
+from services.auth import AuthService
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -71,5 +74,13 @@ async def resend_activation(
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def login():
-    pass
+async def login_user(
+    login_data: UserLoginRequestSchema,
+    service: AuthService = Depends(get_auth_service),
+) -> UserLoginResponseSchema:
+    access_token, refresh_token = await service.login(
+        login_data.email, login_data.password
+    )
+    return UserLoginResponseSchema(
+        access_token=access_token, refresh_token=refresh_token
+    )

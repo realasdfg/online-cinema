@@ -134,26 +134,34 @@ class BaseToken(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
 
 class ActivationToken(BaseToken):
     __tablename__ = "activation_tokens"
 
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+
     user: Mapped["User"] = relationship("User", back_populates="activation_token")
 
     def __repr__(self):
-        return f"<ActivationToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<ActivationToken(id={self.id}, expires_at={self.expires_at})>"
 
 
 class PasswordResetToken(BaseToken):
     __tablename__ = "password_reset_tokens"
 
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+
     user: Mapped["User"] = relationship("User", back_populates="password_reset_token")
 
     def __repr__(self):
-        return f"<PasswordResetToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<PasswordResetToken(id={self.id}, expires_at={self.expires_at})>"
 
 
 class RefreshToken(BaseToken):
@@ -161,12 +169,5 @@ class RefreshToken(BaseToken):
 
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
 
-    @classmethod
-    def create(
-        cls, user_id: int | Mapped[int], days_valid: int, token: str
-    ) -> "RefreshToken":
-        expires_at = datetime.now(timezone.utc) + timedelta(days=days_valid)
-        return cls(user_id=user_id, expires_at=expires_at, token=token)
-
     def __repr__(self):
-        return f"<RefreshToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<RefreshToken(id={self.id}, expires_at={self.expires_at})>"

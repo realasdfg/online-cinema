@@ -11,3 +11,12 @@ class TokenExpiredError(AuthError):
 
 class InvalidJWTError(AuthError):
     detail = "Invalid token."
+
+
+class InvalidEmailOrPasswordError(AuthError):
+    detail = "Invalid email or password."
+
+
+class UserNotActivatedError(AuthError):
+    status_code = 403
+    detail = "User account is not activated."

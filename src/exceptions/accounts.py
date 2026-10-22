@@ -19,3 +19,8 @@ class InvalidOrExpiredTokenError(AppError):
 class UserAlreadyActivatedError(AppError):
     status_code = 400
     detail = "User account is already active."
+
+
+class UserNotActivatedError(AppError):
+    status_code = 403
+    detail = "User account is not activated."

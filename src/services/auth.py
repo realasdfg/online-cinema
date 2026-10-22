@@ -2,9 +2,10 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.accounts import RefreshToken, User
+from database.models.accounts import User
 from database.repositories.accounts import RefreshTokenRepository, UserRepository
-from exceptions.auth import InvalidEmailOrPasswordError, UserNotActivatedError
+from exceptions.accounts import UserNotActivatedError
+from exceptions.auth import InvalidEmailOrPasswordError
 from security.tokens import JWTAuthManager
 from security.utils import hash_token
 from services.base import BaseService

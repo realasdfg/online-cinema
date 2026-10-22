@@ -19,6 +19,16 @@ class UserRegistrationRequestSchema(BaseEmailPasswordSchema):
     pass
 
 
+class UserLoginRequestSchema(BaseEmailPasswordSchema):
+    pass
+
+
+class UserLoginResponseSchema(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
 class UserRegistrationResponseSchema(BaseModel):
     id: int
     email: str

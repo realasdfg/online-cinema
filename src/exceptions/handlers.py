@@ -23,7 +23,11 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         if exc.status_code >= 500:
             logger.error("Server error: %s", exc)
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=exc.headers,
+        )
 
     @app.exception_handler(DefaultGroupNotFoundError)
     async def default_group_not_found_handler(

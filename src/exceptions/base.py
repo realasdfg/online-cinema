@@ -1,6 +1,10 @@
+from typing import ClassVar
+
+
 class AppError(Exception):
     status_code: int = 500
     detail: str = "Internal server error."
+    headers: ClassVar[dict[str, str] | None] = None
 
     def __init__(self, detail: str | None = None) -> None:
         self.detail = detail or self.detail

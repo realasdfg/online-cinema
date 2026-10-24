@@ -17,6 +17,8 @@ class EmailSender(EmailSenderInterface):
     _TEMPLATES: ClassVar[dict[str, str]] = {
         "activation": "activation_email.html",
         "activation_complete": "activation_complete_email.html",
+        "password_reset_request": "password_reset_request_email.html",
+        "password_reset_complete": "password_reset_complete_email.html",
     }
 
     def __init__(
@@ -114,5 +116,37 @@ class EmailSender(EmailSenderInterface):
             email,
             "Account Activated Successfully",
             "activation_complete",
+            login_link=login_link,
+        )
+
+    async def send_password_reset_email(self, email: str, reset_link: str) -> None:
+        """
+        Send a password reset request email asynchronously.
+
+        Args:
+            email (str): The recipient's email address.
+            reset_link (str): The reset link to be included in the email.
+        """
+        await self._send_templated(
+            email,
+            "Password Reset Request",
+            "password_reset_request",
+            reset_link=reset_link,
+        )
+
+    async def send_password_reset_complete_email(
+        self, email: str, login_link: str
+    ) -> None:
+        """
+        Send a password reset completion email asynchronously.
+
+        Args:
+            email (str): The recipient's email address.
+            login_link (str): The login link to be included in the email.
+        """
+        await self._send_templated(
+            email,
+            "Your Password Has Been Successfully Reset",
+            "password_reset_complete",
             login_link=login_link,
         )

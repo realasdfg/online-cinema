@@ -63,3 +63,9 @@ class AuthService(BaseService[User]):
 
         access_token = self._jwt.create_access_token(user.id)
         return access_token
+
+    async def logout(self, refresh_token: str) -> None:
+        await self._refresh_token_repo.delete(
+            RefreshToken.token_hash == hash_token(refresh_token)
+        )
+        await self._session.commit()

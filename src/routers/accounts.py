@@ -95,3 +95,12 @@ async def refresh_access_token(
 ) -> TokenRefreshResponseSchema:
     access_token = await service.refresh(token_data.refresh_token)
     return TokenRefreshResponseSchema(access_token=access_token)
+
+
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout_user(
+    token_data: TokenRefreshRequestSchema,
+    service: AuthService = Depends(get_auth_service),
+) -> MessageResponseSchema:
+    await service.logout(token_data.refresh_token)
+    return MessageResponseSchema(message="Logged out successfully.")

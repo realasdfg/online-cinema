@@ -7,6 +7,8 @@ from notifications.links import build_activation_link, build_login_link
 from schemas.accounts import (
     MessageResponseSchema,
     ResendActivationRequestSchema,
+    TokenRefreshRequestSchema,
+    TokenRefreshResponseSchema,
     UserActivationRequestSchema,
     UserLoginRequestSchema,
     UserLoginResponseSchema,
@@ -84,3 +86,12 @@ async def login_user(
     return UserLoginResponseSchema(
         access_token=access_token, refresh_token=refresh_token
     )
+
+
+@router.post("/refresh", status_code=status.HTTP_200_OK)
+async def refresh_access_token(
+    token_data: TokenRefreshRequestSchema,
+    service: AuthService = Depends(get_auth_service),
+) -> TokenRefreshResponseSchema:
+    access_token = await service.refresh(token_data.refresh_token)
+    return TokenRefreshResponseSchema(access_token=access_token)

@@ -2,10 +2,14 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.accounts import User
+from database.models.accounts import RefreshToken, User
 from database.repositories.accounts import RefreshTokenRepository, UserRepository
 from exceptions.accounts import UserNotActivatedError
-from exceptions.auth import InvalidEmailOrPasswordError
+from exceptions.auth import (
+    InvalidEmailOrPasswordError,
+    InvalidJWTError,
+    TokenExpiredError,
+)
 from security.tokens import JWTAuthManager
 from security.utils import hash_token
 from services.base import BaseService
@@ -40,3 +44,22 @@ class AuthService(BaseService[User]):
         )
         await self._session.commit()
         return access_token, refresh_token
+
+    async def refresh(self, refresh_token: str) -> str:
+        payload = self._jwt.decode_refresh_token(refresh_token)
+
+        token_hash = hash_token(refresh_token)
+        token_record = await self._refresh_token_repo.get(
+            RefreshToken.token_hash == token_hash
+        )
+        if token_record is None or str(token_record.user_id) != payload["sub"]:
+            raise InvalidJWTError()
+
+        user = await self._repo.get(User.id == token_record.user_id)
+        if user is None or not user.is_active:
+            await self._refresh_token_repo.delete(RefreshToken.token_hash == token_hash)
+            await self._session.commit()
+            raise InvalidJWTError()
+
+        access_token = self._jwt.create_access_token(user.id)
+        return access_token

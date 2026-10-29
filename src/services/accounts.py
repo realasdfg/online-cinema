@@ -4,13 +4,19 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import Settings, get_settings
-from database.models.accounts import ActivationToken, User, UserGroup
+from database.models.accounts import (
+    ActivationToken,
+    User,
+    UserGroup,
+)
 from database.models.enums import UserGroupEnum
 from database.repositories.accounts import (
     ActivationTokenRepository,
+    PasswordResetTokenRepository,
     UserGroupRepository,
     UserRepository,
 )
+from database.repositories.repository import SQLAlchemyRepository
 from exceptions.accounts import (
     DefaultGroupNotFoundError,
     InvalidOrExpiredTokenError,
@@ -28,6 +34,7 @@ class AccountService(BaseCRUDService[User]):
         self._settings = settings or get_settings()
         self._group_repo = UserGroupRepository(session)
         self._activation_token_repo = ActivationTokenRepository(session)
+        self._password_token_repo = PasswordResetTokenRepository(session)
 
     async def register(self, email: str, password: str) -> tuple[User, str]:
         if await self._repo.get(User.email == email) is not None:
@@ -49,14 +56,11 @@ class AccountService(BaseCRUDService[User]):
             await self._session.rollback()
             raise UserAlreadyExistsError() from e
 
-        raw_token = generate_secure_token()
-        await self._activation_token_repo.create(
-            {
-                "user_id": user.id,
-                "token_hash": hash_token(raw_token),
-                "expires_at": datetime.now(timezone.utc)
-                + timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
-            }
+        raw_token = await self._issue_token(
+            self._activation_token_repo,
+            user.id,
+            timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
+            commit=False,
         )
 
         await self._session.commit()
@@ -86,20 +90,44 @@ class AccountService(BaseCRUDService[User]):
         await self._session.commit()
         return user
 
+    async def _issue_token(
+        self,
+        token_repo: SQLAlchemyRepository,
+        user_id: int,
+        ttl: timedelta,
+        commit: bool = True,
+    ) -> str:
+        await token_repo.delete(token_repo.model.user_id == user_id)
+        raw_token = generate_secure_token()
+        await token_repo.create(
+            {
+                "user_id": user_id,
+                "token_hash": hash_token(raw_token),
+                "expires_at": datetime.now(timezone.utc) + ttl,
+            }
+        )
+        if commit:
+            await self._session.commit()
+        return raw_token
+
     async def refresh_activation_token(self, email: str) -> str | None:
         user = await self._repo.get(User.email == email)
         if user is None or user.is_active:
             return None
 
-        await self._activation_token_repo.delete(ActivationToken.user_id == user.id)
-        raw_token = generate_secure_token()
-        await self._activation_token_repo.create(
-            {
-                "user_id": user.id,
-                "token_hash": hash_token(raw_token),
-                "expires_at": datetime.now(timezone.utc)
-                + timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
-            }
+        return await self._issue_token(
+            self._activation_token_repo,
+            user.id,
+            timedelta(hours=self._settings.ACTIVATION_TOKEN_TTL_HOURS),
         )
-        await self._session.commit()
-        return raw_token
+
+    async def request_password_reset(self, email: str) -> str | None:
+        user = await self._repo.get(User.email == email)
+        if user is None or not user.is_active:
+            return None
+
+        return await self._issue_token(
+            self._password_token_repo,
+            user.id,
+            timedelta(minutes=self._settings.PASSWORD_RESET_TOKEN_TTL_MINUTES),
+        )

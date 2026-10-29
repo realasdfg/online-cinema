@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DB_FILE_NAME: str = "db.sqlite3"
 
     ACTIVATION_TOKEN_TTL_HOURS: int = 24
+    PASSWORD_RESET_TOKEN_TTL_MINUTES: int = 60
     ACCESS_TOKEN_TTL_MINUTES: int = 60
     REFRESH_TOKEN_TTL_DAYS: int = 7
 

@@ -3,9 +3,14 @@ from fastapi import APIRouter, BackgroundTasks, Depends, status
 from config import Settings, get_settings
 from dependencies import get_account_service, get_auth_service, get_email_sender
 from notifications.interfaces import EmailSenderInterface
-from notifications.links import build_activation_link, build_login_link
+from notifications.links import (
+    build_activation_link,
+    build_login_link,
+    build_password_reset_link,
+)
 from schemas.accounts import (
     MessageResponseSchema,
+    PasswordResetRequestSchema,
     ResendActivationRequestSchema,
     TokenRefreshRequestSchema,
     TokenRefreshResponseSchema,
@@ -72,6 +77,26 @@ async def resend_activation(
         )
     return MessageResponseSchema(
         message="If the account exists, a new activation link has been sent."
+    )
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+async def request_password_reset(
+    payload: PasswordResetRequestSchema,
+    background_tasks: BackgroundTasks,
+    service: AccountService = Depends(get_account_service),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings),
+) -> MessageResponseSchema:
+    raw_token = await service.request_password_reset(payload.email)
+    if raw_token is not None:
+        background_tasks.add_task(
+            email_sender.send_password_reset_email,
+            payload.email,
+            build_password_reset_link(settings, raw_token),
+        )
+    return MessageResponseSchema(
+        message="If you are registered, you will receive an email with instructions."
     )
 
 

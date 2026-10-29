@@ -10,6 +10,7 @@ from notifications.links import (
 )
 from schemas.accounts import (
     MessageResponseSchema,
+    PasswordResetConfirmSchema,
     PasswordResetRequestSchema,
     ResendActivationRequestSchema,
     TokenRefreshRequestSchema,
@@ -98,6 +99,23 @@ async def request_password_reset(
     return MessageResponseSchema(
         message="If you are registered, you will receive an email with instructions."
     )
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+async def confirm_password_reset(
+    payload: PasswordResetConfirmSchema,
+    background_tasks: BackgroundTasks,
+    service: AccountService = Depends(get_account_service),
+    email_sender: EmailSenderInterface = Depends(get_email_sender),
+    settings: Settings = Depends(get_settings),
+) -> MessageResponseSchema:
+    user = await service.confirm_password_reset(payload.token, payload.new_password)
+    background_tasks.add_task(
+        email_sender.send_password_reset_complete_email,
+        user.email,
+        build_login_link(settings),
+    )
+    return MessageResponseSchema(message="Password has been successfully changed.")
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)

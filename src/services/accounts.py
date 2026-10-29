@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import Settings, get_settings
 from database.models.accounts import (
     ActivationToken,
+    PasswordResetToken,
+    RefreshToken,
     User,
     UserGroup,
 )
@@ -13,6 +15,7 @@ from database.models.enums import UserGroupEnum
 from database.repositories.accounts import (
     ActivationTokenRepository,
     PasswordResetTokenRepository,
+    RefreshTokenRepository,
     UserGroupRepository,
     UserRepository,
 )
@@ -35,6 +38,7 @@ class AccountService(BaseCRUDService[User]):
         self._group_repo = UserGroupRepository(session)
         self._activation_token_repo = ActivationTokenRepository(session)
         self._password_token_repo = PasswordResetTokenRepository(session)
+        self._refresh_token_repo = RefreshTokenRepository(session)
 
     async def register(self, email: str, password: str) -> tuple[User, str]:
         if await self._repo.get(User.email == email) is not None:
@@ -131,3 +135,28 @@ class AccountService(BaseCRUDService[User]):
             user.id,
             timedelta(minutes=self._settings.PASSWORD_RESET_TOKEN_TTL_MINUTES),
         )
+
+    async def confirm_password_reset(self, token: str, new_password: str) -> User:
+        token_record = await self._password_token_repo.get(
+            PasswordResetToken.token_hash == hash_token(token)
+        )
+        if token_record is None:
+            raise InvalidOrExpiredTokenError()
+
+        expires_at = token_record.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            raise InvalidOrExpiredTokenError()
+
+        user = await self._repo.get(User.id == token_record.user_id)
+        if user is None or not user.is_active:
+            raise InvalidOrExpiredTokenError()
+        user.hashed_password = hash_password(new_password)
+
+        await self._password_token_repo.delete(PasswordResetToken.id == token_record.id)
+        await self._refresh_token_repo.delete(
+            RefreshToken.user_id == token_record.user_id
+        )
+        await self._session.commit()
+        return user

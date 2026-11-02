@@ -1,8 +1,11 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, status
 
-from config import Settings, get_settings
-from dependencies import get_account_service, get_auth_service, get_email_sender
-from notifications.interfaces import EmailSenderInterface
+from dependencies import (
+    AccountServiceDep,
+    AuthServiceDep,
+    EmailSenderDep,
+    SettingsDep,
+)
 from notifications.links import (
     build_activation_link,
     build_login_link,
@@ -21,8 +24,6 @@ from schemas.accounts import (
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
 )
-from services.accounts import AccountService
-from services.auth import AuthService
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
@@ -31,9 +32,9 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 async def register_user(
     user_data: UserRegistrationRequestSchema,
     background_tasks: BackgroundTasks,
-    service: AccountService = Depends(get_account_service),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    settings: Settings = Depends(get_settings),
+    service: AccountServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> UserRegistrationResponseSchema:
     user, raw_token = await service.register(user_data.email, user_data.password)
     background_tasks.add_task(
@@ -48,9 +49,9 @@ async def register_user(
 async def activate_account(
     activation_data: UserActivationRequestSchema,
     background_tasks: BackgroundTasks,
-    service: AccountService = Depends(get_account_service),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    settings: Settings = Depends(get_settings),
+    service: AccountServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> MessageResponseSchema:
     user = await service.activate_account(activation_data.token)
     background_tasks.add_task(
@@ -65,9 +66,9 @@ async def activate_account(
 async def resend_activation(
     payload: ResendActivationRequestSchema,
     background_tasks: BackgroundTasks,
-    service: AccountService = Depends(get_account_service),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    settings: Settings = Depends(get_settings),
+    service: AccountServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> MessageResponseSchema:
     raw_token = await service.refresh_activation_token(payload.email)
     if raw_token is not None:
@@ -85,9 +86,9 @@ async def resend_activation(
 async def request_password_reset(
     payload: PasswordResetRequestSchema,
     background_tasks: BackgroundTasks,
-    service: AccountService = Depends(get_account_service),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    settings: Settings = Depends(get_settings),
+    service: AccountServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> MessageResponseSchema:
     raw_token = await service.request_password_reset(payload.email)
     if raw_token is not None:
@@ -105,9 +106,9 @@ async def request_password_reset(
 async def confirm_password_reset(
     payload: PasswordResetConfirmSchema,
     background_tasks: BackgroundTasks,
-    service: AccountService = Depends(get_account_service),
-    email_sender: EmailSenderInterface = Depends(get_email_sender),
-    settings: Settings = Depends(get_settings),
+    service: AccountServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> MessageResponseSchema:
     user = await service.confirm_password_reset(payload.token, payload.new_password)
     background_tasks.add_task(
@@ -120,8 +121,7 @@ async def confirm_password_reset(
 
 @router.post("/login", status_code=status.HTTP_200_OK)
 async def login_user(
-    login_data: UserLoginRequestSchema,
-    service: AuthService = Depends(get_auth_service),
+    login_data: UserLoginRequestSchema, service: AuthServiceDep
 ) -> UserLoginResponseSchema:
     access_token, refresh_token = await service.login(
         login_data.email, login_data.password
@@ -133,8 +133,7 @@ async def login_user(
 
 @router.post("/refresh", status_code=status.HTTP_200_OK)
 async def refresh_access_token(
-    token_data: TokenRefreshRequestSchema,
-    service: AuthService = Depends(get_auth_service),
+    token_data: TokenRefreshRequestSchema, service: AuthServiceDep
 ) -> TokenRefreshResponseSchema:
     access_token = await service.refresh(token_data.refresh_token)
     return TokenRefreshResponseSchema(access_token=access_token)
@@ -142,8 +141,7 @@ async def refresh_access_token(
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout_user(
-    token_data: TokenRefreshRequestSchema,
-    service: AuthService = Depends(get_auth_service),
+    token_data: TokenRefreshRequestSchema, service: AuthServiceDep
 ) -> MessageResponseSchema:
     await service.logout(token_data.refresh_token)
     return MessageResponseSchema(message="Logged out successfully.")

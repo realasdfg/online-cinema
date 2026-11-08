@@ -1,11 +1,9 @@
 from fastapi import APIRouter, BackgroundTasks, status
 
-from dependencies import (
-    AccountServiceDep,
-    AuthServiceDep,
-    EmailSenderDep,
-    SettingsDep,
-)
+from dependencies.auth import AuthServiceDep
+from dependencies.common import SettingsDep
+from dependencies.notifications import EmailSenderDep
+from dependencies.services import AccountServiceDep
 from notifications.links import (
     build_activation_link,
     build_login_link,
@@ -13,6 +11,7 @@ from notifications.links import (
 )
 from schemas.accounts import (
     MessageResponseSchema,
+    PasswordChangeRequestSchema,
     PasswordResetConfirmSchema,
     PasswordResetRequestSchema,
     ResendActivationRequestSchema,

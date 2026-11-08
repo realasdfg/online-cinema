@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +53,7 @@ class AccountService(BaseCRUDService[User]):
             user = await self._repo.create(
                 {
                     "email": email,
-                    "hashed_password": hash_password(password),
+                    "_hashed_password": hash_password(password),
                     "group_id": default_group.id,
                 }
             )
@@ -70,9 +71,11 @@ class AccountService(BaseCRUDService[User]):
         await self._session.commit()
         return user, raw_token
 
-    async def activate_account(self, token: str) -> User:
-        token_record = await self._activation_token_repo.get(
-            ActivationToken.token_hash == hash_token(token)
+    async def _get_valid_token_and_user(
+        self, token_repo: SQLAlchemyRepository, raw_token: str
+    ) -> tuple[Any | None, User]:
+        token_record = await token_repo.get(
+            token_repo.model.token_hash == hash_token(raw_token)
         )
         if token_record is None:
             raise InvalidOrExpiredTokenError()
@@ -86,10 +89,16 @@ class AccountService(BaseCRUDService[User]):
         user = await self._repo.get(User.id == token_record.user_id)
         if user is None:
             raise InvalidOrExpiredTokenError()
+        return token_record, user
+
+    async def activate_account(self, token: str) -> User:
+        token_record, user = await self._get_valid_token_and_user(
+            self._activation_token_repo, token
+        )
         if user.is_active:
             raise UserAlreadyActivatedError()
-        user.is_active = True
 
+        user.is_active = True
         await self._activation_token_repo.delete(ActivationToken.id == token_record.id)
         await self._session.commit()
         return user
@@ -137,26 +146,14 @@ class AccountService(BaseCRUDService[User]):
         )
 
     async def confirm_password_reset(self, token: str, new_password: str) -> User:
-        token_record = await self._password_token_repo.get(
-            PasswordResetToken.token_hash == hash_token(token)
+        token_record, user = await self._get_valid_token_and_user(
+            self._password_token_repo, token
         )
-        if token_record is None:
+        if not user.is_active:
             raise InvalidOrExpiredTokenError()
 
-        expires_at = token_record.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            raise InvalidOrExpiredTokenError()
-
-        user = await self._repo.get(User.id == token_record.user_id)
-        if user is None or not user.is_active:
-            raise InvalidOrExpiredTokenError()
-        user.hashed_password = hash_password(new_password)
-
+        user._hashed_password = hash_password(new_password)
         await self._password_token_repo.delete(PasswordResetToken.id == token_record.id)
-        await self._refresh_token_repo.delete(
-            RefreshToken.user_id == token_record.user_id
-        )
+        await self._refresh_token_repo.delete(RefreshToken.user_id == user.id)
         await self._session.commit()
         return user

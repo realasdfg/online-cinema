@@ -12,7 +12,7 @@ class BaseService(Generic[TModel]):
         self, session: AsyncSession, repo_class: type[SQLAlchemyRepository[TModel]]
     ):
         self._session = session
-        self._repo = repo_class(session)
+        self._repo: SQLAlchemyRepository[TModel] = repo_class(session)
 
 
 class BaseCRUDService(BaseService[TModel]):

@@ -69,3 +69,13 @@ class PasswordResetConfirmSchema(BaseModel):
     @classmethod
     def validate_new_password(cls, value):
         return validate_password_strength(value)
+
+
+class PasswordChangeRequestSchema(BaseModel):
+    old_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value):
+        return validate_password_strength(value)

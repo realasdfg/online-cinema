@@ -18,3 +18,7 @@ class InvalidJWTError(AuthError):
 
 class InvalidEmailOrPasswordError(AuthError):
     detail = "Invalid email or password."
+
+
+class InvalidOldPasswordError(AuthError):
+    detail = "Invalid old password."

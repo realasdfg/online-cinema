@@ -27,6 +27,7 @@ from exceptions.accounts import (
     UserAlreadyActivatedError,
     UserAlreadyExistsError,
 )
+from exceptions.auth import InvalidOldPasswordError
 from security.passwords import hash_password
 from security.utils import generate_secure_token, hash_token
 from services.base import BaseCRUDService
@@ -157,3 +158,12 @@ class AccountService(BaseCRUDService[User]):
         await self._refresh_token_repo.delete(RefreshToken.user_id == user.id)
         await self._session.commit()
         return user
+
+    async def change_password(
+        self, user: User, old_password: str, new_password: str
+    ) -> None:
+        if not user.verify_password(old_password):
+            raise InvalidOldPasswordError()
+        user._hashed_password = hash_password(new_password)
+        await self._refresh_token_repo.delete(RefreshToken.user_id == user.id)
+        await self._session.commit()

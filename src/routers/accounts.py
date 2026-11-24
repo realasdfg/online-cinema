@@ -1,6 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, status
 
-from dependencies.auth import AuthServiceDep
+from dependencies.auth import AuthServiceDep, CurrentUserDep
 from dependencies.common import SettingsDep
 from dependencies.notifications import EmailSenderDep
 from dependencies.services import AccountServiceDep
@@ -79,6 +79,16 @@ async def resend_activation(
     return MessageResponseSchema(
         message="If the account exists, a new activation link has been sent."
     )
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    payload: PasswordChangeRequestSchema,
+    user: CurrentUserDep,
+    service: AccountServiceDep,
+) -> MessageResponseSchema:
+    await service.change_password(user, payload.old_password, payload.new_password)
+    return MessageResponseSchema(message="Your password has been changed successfully.")
 
 
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)

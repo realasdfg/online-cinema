@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     EMAIL_HOST_PASSWORD: str = "test_password"
     EMAIL_USE_TLS: bool = False
 
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    TOKEN_CLEANUP_INTERVAL_MINUTES: int = 60
+
     @property
     def DB_URI(self) -> str:
         return f"sqlite+aiosqlite:///{BASE_DIR / self.DB_FILE_NAME}"

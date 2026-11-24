@@ -16,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.models.enums import GenderEnum, UserGroupEnum
 from database.session import Base
+from security.passwords import hash_password, verify_password
+from security.utils import generate_secure_token
+from validators.accounts import validate_password_strength
 
 
 class UserGroup(Base):
@@ -37,7 +40,9 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    _hashed_password: Mapped[str] = mapped_column(
+        "hashed_password", String(255), nullable=False
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -73,6 +78,31 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, is_active={self.is_active})>"
 
+    def has_group(self, group_name: UserGroupEnum) -> bool:
+        return self.group.name == group_name
+
+    @classmethod
+    def create(
+        cls, email: str, raw_password: str, group_id: int | Mapped[int]
+    ) -> "User":
+        user = cls(email=email, group_id=group_id)
+        user.password = raw_password
+        return user
+
+    @property
+    def password(self) -> None:
+        raise AttributeError(
+            "Password is write-only. Use the setter to set the password."
+        )
+
+    @password.setter
+    def password(self, raw_password: str) -> None:
+        validate_password_strength(raw_password)
+        self._hashed_password = hash_password(raw_password)
+
+    def verify_password(self, raw_password: str) -> bool:
+        return verify_password(raw_password, self._hashed_password)
+
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -98,47 +128,46 @@ class BaseToken(Base):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc) + timedelta(days=1),
+        DateTime(timezone=True), nullable=False
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
 
 class ActivationToken(BaseToken):
     __tablename__ = "activation_tokens"
 
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+
     user: Mapped["User"] = relationship("User", back_populates="activation_token")
 
     def __repr__(self):
-        return f"<ActivationToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<ActivationToken(id={self.id}, expires_at={self.expires_at})>"
 
 
 class PasswordResetToken(BaseToken):
     __tablename__ = "password_reset_tokens"
 
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+
     user: Mapped["User"] = relationship("User", back_populates="password_reset_token")
 
     def __repr__(self):
-        return f"<PasswordResetToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<PasswordResetToken(id={self.id}, expires_at={self.expires_at})>"
 
 
 class RefreshToken(BaseToken):
     __tablename__ = "refresh_tokens"
 
-    user: Mapped["User"] = relationship("User", back_populates="refresh_token")
-
-    @classmethod
-    def create(
-        cls, user_id: int | Mapped[int], days_valid: int, token: str
-    ) -> "RefreshToken":
-        expires_at = datetime.now(timezone.utc) + timedelta(days=days_valid)
-        return cls(user_id=user_id, expires_at=expires_at, token=token)
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
 
     def __repr__(self):
-        return f"<RefreshToken(id={self.id}, token={self.token}, expires_at={self.expires_at})>"
+        return f"<RefreshToken(id={self.id}, expires_at={self.expires_at})>"

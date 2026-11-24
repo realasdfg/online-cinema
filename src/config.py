@@ -1,11 +1,44 @@
-from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from functools import lru_cache
+from pathlib import Path
 
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+SRC_DIR = Path(__file__).resolve().parent
+BASE_DIR = SRC_DIR.parent
 
 
 class Settings(BaseSettings):
-    db_uri: str
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env")
+
+    BASE_URL: str = "http://localhost:8000"
+    API_V1_PREFIX: str = "/api/v1"
+    FRONTEND_URL: str = "http://localhost:3000"
+
+    DB_FILE_NAME: str = "db.sqlite3"
+
+    ACTIVATION_TOKEN_TTL_HOURS: int = 24
+    PASSWORD_RESET_TOKEN_TTL_MINUTES: int = 60
+    ACCESS_TOKEN_TTL_MINUTES: int = 60
+    REFRESH_TOKEN_TTL_DAYS: int = 7
+
+    SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+
+    PATH_TO_EMAIL_TEMPLATES_DIR: Path = SRC_DIR / "notifications" / "templates"
+    EMAIL_HOST: str = "localhost"
+    EMAIL_PORT: int = 1025
+    EMAIL_HOST_USER: str = "testuser"
+    EMAIL_HOST_PASSWORD: str = "test_password"
+    EMAIL_USE_TLS: bool = False
+
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    TOKEN_CLEANUP_INTERVAL_MINUTES: int = 60
+
+    @property
+    def DB_URI(self) -> str:
+        return f"sqlite+aiosqlite:///{BASE_DIR / self.DB_FILE_NAME}"
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

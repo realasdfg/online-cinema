@@ -22,3 +22,8 @@ class InvalidEmailOrPasswordError(AuthError):
 
 class InvalidOldPasswordError(AuthError):
     detail = "Invalid old password."
+
+
+class PermissionDeniedError(AppError):
+    status_code = 403
+    detail = "You do not have permission to perform this action."

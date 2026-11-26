@@ -53,10 +53,6 @@ class ResendActivationRequestSchema(BaseModel):
     email: EmailStr
 
 
-class MessageResponseSchema(BaseModel):
-    message: str
-
-
 class PasswordResetRequestSchema(BaseModel):
     email: EmailStr
 

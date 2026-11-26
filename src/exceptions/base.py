@@ -14,7 +14,7 @@ class AppError(Exception):
 class EntityNotFoundError(AppError):
     status_code = 404
 
-    def __init__(self, entity_name: str, id_: int) -> None:
+    def __init__(self, entity_name: str, identifier: int | str) -> None:
         self.entity_name = entity_name
-        self.id_ = id_
-        super().__init__(f"{entity_name} with id={id_} not found.")
+        self.identifier = identifier
+        super().__init__(f"{entity_name} '{identifier}' not found.")

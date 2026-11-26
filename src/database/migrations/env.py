@@ -7,7 +7,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from config import get_settings
-from database.models import accounts  # noqa: F401
+from database.models import accounts, movies  # noqa: F401
 from database.session import Base
 
 settings = get_settings()

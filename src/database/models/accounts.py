@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime
 from typing import Optional
 
 from sqlalchemy import (
@@ -17,7 +17,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.models.enums import GenderEnum, UserGroupEnum
 from database.session import Base
 from security.passwords import hash_password, verify_password
-from security.utils import generate_secure_token
 from validators.accounts import validate_password_strength
 
 
@@ -57,7 +56,9 @@ class User(Base):
         ForeignKey("user_groups.id", ondelete="RESTRICT"), nullable=False
     )
 
-    group: Mapped["UserGroup"] = relationship("UserGroup", back_populates="users")
+    group: Mapped["UserGroup"] = relationship(
+        "UserGroup", back_populates="users", lazy="selectin"
+    )
 
     profile: Mapped["UserProfile"] = relationship(
         "UserProfile", back_populates="user", cascade="all, delete-orphan"

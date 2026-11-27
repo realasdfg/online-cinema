@@ -10,7 +10,6 @@ from notifications.links import (
     build_password_reset_link,
 )
 from schemas.accounts import (
-    MessageResponseSchema,
     PasswordChangeRequestSchema,
     PasswordResetConfirmSchema,
     PasswordResetRequestSchema,
@@ -23,6 +22,7 @@ from schemas.accounts import (
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
 )
+from schemas.common import MessageResponseSchema
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 

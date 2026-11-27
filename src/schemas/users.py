@@ -25,3 +25,7 @@ class UserResponseSchema(BaseModel):
     group: UserGroupResponseSchema
     created_at: datetime
     updated_at: datetime
+
+
+class UserActivationUpdateRequestSchema(BaseModel):
+    is_active: bool
